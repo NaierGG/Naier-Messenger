@@ -1,13 +1,14 @@
 "use client";
 
 import type { PropsWithChildren } from "react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Toast } from "@/components/common/Toast";
 import { useUiStore } from "@/store/uiStore";
 
 export function ToastProvider({ children }: PropsWithChildren) {
-  const toasts = useUiStore((state) => state.toasts.slice(-5));
+  const allToasts = useUiStore((state) => state.toasts);
   const removeToast = useUiStore((state) => state.removeToast);
+  const toasts = useMemo(() => allToasts.slice(-5), [allToasts]);
 
   useEffect(() => {
     const timers = toasts.map((toast) =>
