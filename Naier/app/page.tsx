@@ -20,13 +20,13 @@ export default function HomePage() {
       <div className="w-full max-w-xl">
         <div className="mb-8 text-center">
           <p className="text-sm uppercase tracking-[0.28em] text-sky-300">
-            Nostr Messenger
+            Naier
           </p>
           <h1 className="mt-4 text-4xl font-semibold text-white">
-            Decentralized P2P Messenger
+            Direct messaging over Nostr
           </h1>
           <p className="mt-3 text-sm leading-6 text-zinc-400">
-            Sign in with your Nostr key and start direct messages immediately.
+            Bring your key, connect to relays, and start private conversations.
           </p>
         </div>
         <div className="rounded-[32px] border border-zinc-800 bg-zinc-950/80 p-2 shadow-2xl">

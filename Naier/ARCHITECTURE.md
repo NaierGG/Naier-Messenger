@@ -2,7 +2,7 @@
 
 ## Overview
 
-`nostr-messenger` is a client-heavy web application that uses Nostr relays as the network transport layer for decentralized direct messaging.
+`Naier` is a client-heavy web application that uses Nostr relays as the network transport layer for decentralized direct messaging.
 
 At a high level, the system is composed of:
 
@@ -216,7 +216,7 @@ Benefit:
 
 Concrete schema details:
 
-- database name: `nostr-messenger`
+- database name: `naier`
 - database version: `1`
 - object stores: `messages`, `profiles`
 - message index: `by_conversation` on `recipientPubkey`

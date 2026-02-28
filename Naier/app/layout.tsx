@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Nostr Messenger",
-  description: "\uD0C8\uC911\uC559 P2P \uBA54\uC2E0\uC800"
+  title: "Naier",
+  description: "Direct, relay-based messaging on Nostr."
 };
 
 export default function RootLayout({ children }: PropsWithChildren) {

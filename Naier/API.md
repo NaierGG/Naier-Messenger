@@ -107,7 +107,7 @@ Methods:
 
 Backend:
 
-- IndexedDB database `nostr-messenger`
+- IndexedDB database `naier`
 - object store `messages`
 
 ### Profile Cache
@@ -124,7 +124,7 @@ Methods:
 
 Backend:
 
-- IndexedDB database `nostr-messenger`
+- IndexedDB database `naier`
 - object store `profiles`
 
 ## State Store Interfaces

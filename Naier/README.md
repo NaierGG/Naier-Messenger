@@ -1,6 +1,8 @@
-# Nostr Messenger
+# Naier
 
-Nostr Messenger is a client-side decentralized direct messaging app built with Next.js, React, TypeScript, Zustand, and `nostr-tools`.
+Naier is a decentralized messaging client for Nostr focused on direct, relay-based conversations and local-first control.
+
+Built with Next.js, React, TypeScript, Zustand, and `nostr-tools`, Naier aims to provide a lightweight messaging experience where identity comes from your keypair and network transport comes from Nostr relays.
 
 The current project goal is to provide a lightweight web messenger that lets a user:
 
@@ -97,7 +99,7 @@ npm install
 Current local env example:
 
 ```env
-NEXT_PUBLIC_APP_NAME="Nostr Messenger"
+NEXT_PUBLIC_APP_NAME="Naier"
 ```
 
 ### Run

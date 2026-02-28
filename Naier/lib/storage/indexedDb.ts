@@ -1,4 +1,4 @@
-const DB_NAME = "nostr-messenger-db";
+const DB_NAME = "naier-db";
 const DB_VERSION = 1;
 const MESSAGE_STORE = "messages";
 const PROFILE_STORE = "profiles";

@@ -22,7 +22,7 @@ npm install
 Current known variable:
 
 ```env
-NEXT_PUBLIC_APP_NAME="Nostr Messenger"
+NEXT_PUBLIC_APP_NAME="Naier"
 ```
 
 Notes:

@@ -22,7 +22,7 @@ interface ProfileCacheDB extends DBSchema {
   };
 }
 
-const DB_NAME = "nostr-messenger";
+const DB_NAME = "naier";
 const DB_VERSION = 1;
 const STORE_NAME = "profiles";
 

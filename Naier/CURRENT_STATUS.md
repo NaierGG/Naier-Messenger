@@ -66,7 +66,7 @@ Concrete notes:
 
 Concrete notes:
 
-- IndexedDB database name is `nostr-messenger`,
+- IndexedDB database name is `naier`,
 - relay configuration is not currently persisted,
 - `messageCache.clearAll()` clears only the `messages` store,
 - `profileCache.clearAll()` clears only the `profiles` store.

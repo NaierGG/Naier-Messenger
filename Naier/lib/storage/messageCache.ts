@@ -21,7 +21,7 @@ interface MessageCacheDB extends DBSchema {
   };
 }
 
-const DB_NAME = "nostr-messenger";
+const DB_NAME = "naier";
 const DB_VERSION = 1;
 
 export async function initDB(): Promise<IDBPDatabase<MessageCacheDB>> {
