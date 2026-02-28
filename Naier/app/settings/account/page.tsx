@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { KeyDisplay } from "@/components/auth/KeyDisplay";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { createProfileEvent } from "@/lib/nostr/events";
@@ -75,10 +76,28 @@ export default function AccountSettingsPage() {
     <main className="mx-auto min-h-screen w-full max-w-3xl px-6 py-10">
       <div className="grid gap-5">
         <div className="rounded-[28px] border border-zinc-800 bg-zinc-950/80 p-6 shadow-2xl">
-          <h1 className="text-3xl font-semibold text-zinc-100">Account Management</h1>
-          <p className="mt-2 text-sm text-zinc-400">
-            Review your keys and publish profile metadata.
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-semibold text-zinc-100">Account Management</h1>
+              <p className="mt-2 text-sm text-zinc-400">
+                Review your keys and publish profile metadata.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link
+                className="rounded-full border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition hover:border-zinc-700 hover:bg-zinc-800"
+                href="/settings"
+              >
+                Back to Settings
+              </Link>
+              <Link
+                className="rounded-full border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition hover:border-zinc-700 hover:bg-zinc-800"
+                href="/chat"
+              >
+                Back to Chat
+              </Link>
+            </div>
+          </div>
         </div>
 
         <KeyDisplay showSecret={showSecret} />

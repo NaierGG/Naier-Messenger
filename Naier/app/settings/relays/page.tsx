@@ -11,12 +11,20 @@ export default function RelaySettingsPage() {
             Review relay endpoints and connection status.
           </p>
         </div>
-        <Link
-          className="rounded-full border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition hover:border-zinc-700 hover:bg-zinc-800"
-          href="/settings"
-        >
-          Back to Settings
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            className="rounded-full border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition hover:border-zinc-700 hover:bg-zinc-800"
+            href="/settings"
+          >
+            Back to Settings
+          </Link>
+          <Link
+            className="rounded-full border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-zinc-200 transition hover:border-zinc-700 hover:bg-zinc-800"
+            href="/chat"
+          >
+            Back to Chat
+          </Link>
+        </div>
       </div>
       <div className="rounded-[28px] border border-zinc-800 bg-zinc-950/80 p-6 shadow-2xl">
         <RelayList />
