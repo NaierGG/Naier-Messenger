@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CopyButton } from "@/components/common/CopyButton";
 import { generateKeyPair, nsecToKeyPair } from "@/lib/nostr/keys";
-import { saveKeys } from "@/lib/storage/keyStorage";
 import { isValidNsec } from "@/lib/utils/validation";
 import type { NostrKeyPair } from "@/types/nostr";
 import { authStore } from "@/store/authStore";
@@ -57,7 +56,6 @@ export function KeySetup() {
 
   function handleGenerate(): void {
     const keyPair = generateKeyPair();
-    saveKeys(keyPair);
     authStore.getState().setKeys(keyPair);
     setGeneratedKeyPair(keyPair);
     setErrorMessage("");
@@ -74,7 +72,6 @@ export function KeySetup() {
   function handleLogin(): void {
     try {
       const keyPair = nsecToKeyPair(nsec);
-      saveKeys(keyPair);
       authStore.getState().setKeys(keyPair);
       setErrorMessage("");
       router.push(nextPath);

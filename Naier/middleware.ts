@@ -5,7 +5,11 @@ export function middleware(request: NextRequest) {
   const isLoggedIn = request.cookies.get("nostr_logged_in")?.value === "true";
 
   if (!isLoggedIn) {
-    return NextResponse.redirect(new URL("/", request.url));
+    const loginUrl = new URL("/", request.url);
+    const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+
+    loginUrl.searchParams.set("next", nextPath);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();

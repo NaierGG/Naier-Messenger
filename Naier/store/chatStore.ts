@@ -15,7 +15,13 @@ interface ChatState {
 }
 
 function sortMessages(messages: NostrMessage[]): NostrMessage[] {
-  return [...messages].sort((left, right) => left.createdAt - right.createdAt);
+  return [...messages].sort((left, right) => {
+    if (left.createdAt !== right.createdAt) {
+      return left.createdAt - right.createdAt;
+    }
+
+    return left.id.localeCompare(right.id);
+  });
 }
 
 function upsertConversation(

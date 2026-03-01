@@ -32,6 +32,15 @@ function clearAuthCookie() {
   document.cookie = CLEAR_AUTH_COOKIE;
 }
 
+function syncAuthCookie(isLoggedIn: boolean) {
+  if (isLoggedIn) {
+    setAuthCookie();
+    return;
+  }
+
+  clearAuthCookie();
+}
+
 export const useAuthStore = create<AuthState>()(
   immer((set) => ({
     isLoggedIn: false,
@@ -40,7 +49,7 @@ export const useAuthStore = create<AuthState>()(
     npub: null,
     setKeys: (keyPair) => {
       saveKeys(keyPair);
-      setAuthCookie();
+      syncAuthCookie(true);
 
       set((state) => {
         state.isLoggedIn = true;
@@ -51,7 +60,7 @@ export const useAuthStore = create<AuthState>()(
     },
     logout: () => {
       clearKeys();
-      clearAuthCookie();
+      syncAuthCookie(false);
 
       set((state) => {
         state.isLoggedIn = false;
@@ -62,6 +71,7 @@ export const useAuthStore = create<AuthState>()(
     },
     hydrate: () => {
       const keyPair = loadKeys();
+      syncAuthCookie(Boolean(keyPair));
 
       set((state) => {
         state.isLoggedIn = Boolean(keyPair);

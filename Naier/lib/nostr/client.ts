@@ -2,8 +2,10 @@ import type { Event as NostrEvent, Filter } from "nostr-tools";
 import { SimplePool } from "nostr-tools/pool";
 import { DEFAULT_RELAYS, NOSTR_KINDS } from "@/constants";
 import { isValidRelayUrl } from "@/lib/utils/validation";
+import { relayStore } from "@/store/relayStore";
 
 type Unsubscribe = () => void;
+type RelayConnectionState = "connecting" | "connected" | "disconnected" | "error";
 
 export class NostrClient {
   private pool: SimplePool;
@@ -14,6 +16,21 @@ export class NostrClient {
     this.pool = new SimplePool();
     this.relayUrls = [...new Set(relayUrls)];
     this.subscriptions = new Map<string, Unsubscribe>();
+  }
+
+  private setRelayStatuses(relayUrls: string[], status: RelayConnectionState): void {
+    relayUrls.forEach((url) => {
+      relayStore.getState().updateStatus(url, status);
+    });
+  }
+
+  private syncRelayStatuses(relayUrls: string[]): void {
+    const connectionStatus = this.pool.listConnectionStatus();
+
+    relayUrls.forEach((url) => {
+      const isConnected = connectionStatus.get(url);
+      relayStore.getState().updateStatus(url, isConnected ? "connected" : "disconnected");
+    });
   }
 
   updateRelays(urls: string[]): void {
@@ -36,13 +53,18 @@ export class NostrClient {
         kinds: [NOSTR_KINDS.DM_GIFT_WRAP],
         "#p": [myPubkey]
       };
+      this.setRelayStatuses(this.relayUrls, "connecting");
 
       const subscription = this.pool.subscribe(this.relayUrls, filter, {
         onevent(event) {
           onEvent(event);
         },
-        oneose() {
+        oneose: () => {
+          this.syncRelayStatuses(this.relayUrls);
           onEose?.();
+        },
+        onclose: () => {
+          this.syncRelayStatuses(this.relayUrls);
         }
       });
 
@@ -82,7 +104,17 @@ export class NostrClient {
     }
 
     try {
-      const results = await Promise.allSettled(this.pool.publish(uniqueRelayUrls, event));
+      this.setRelayStatuses(uniqueRelayUrls, "connecting");
+      const publishPromises = this.pool.publish(uniqueRelayUrls, event);
+      const results = await Promise.allSettled(publishPromises);
+
+      results.forEach((result, index) => {
+        relayStore
+          .getState()
+          .updateStatus(uniqueRelayUrls[index], result.status === "fulfilled" ? "connected" : "error");
+      });
+
+      this.syncRelayStatuses(uniqueRelayUrls);
       const acks = results.filter((result) => result.status === "fulfilled").length;
 
       return {
@@ -91,6 +123,7 @@ export class NostrClient {
         error: acks > 0 ? undefined : "Failed to publish event."
       };
     } catch (error) {
+      this.setRelayStatuses(uniqueRelayUrls, "error");
       return {
         success: false,
         acks: 0,
