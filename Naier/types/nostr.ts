@@ -42,3 +42,8 @@ export interface Conversation {
   unreadCount: number;
   updatedAt: number;
 }
+
+export interface Contact {
+  pubkey: string;
+  addedAt: number;
+}

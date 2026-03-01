@@ -5,24 +5,42 @@ import { usePathname, useRouter } from "next/navigation";
 import { ConversationItem } from "@/components/chat/ConversationItem";
 import { ConversationSearch } from "@/components/chat/ConversationSearch";
 import { useChatStore } from "@/store/chatStore";
+import { useContactStore } from "@/store/contactStore";
 
 export function ConversationList() {
   const router = useRouter();
   const pathname = usePathname();
   const conversations = useChatStore((state) => state.conversations);
+  const contacts = useContactStore((state) => state.contacts);
   const [query, setQuery] = useState("");
+
+  const visibleConversations = useMemo(() => {
+    const merged = new Map(conversations.map((conversation) => [conversation.pubkey, conversation]));
+
+    contacts.forEach((contact) => {
+      if (!merged.has(contact.pubkey)) {
+        merged.set(contact.pubkey, {
+          pubkey: contact.pubkey,
+          unreadCount: 0,
+          updatedAt: contact.addedAt
+        });
+      }
+    });
+
+    return Array.from(merged.values()).sort((left, right) => right.updatedAt - left.updatedAt);
+  }, [contacts, conversations]);
 
   const filteredConversations = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     if (!normalizedQuery) {
-      return conversations;
+      return visibleConversations;
     }
 
-    return conversations.filter((conversation) =>
+    return visibleConversations.filter((conversation) =>
       conversation.pubkey.toLowerCase().includes(normalizedQuery)
     );
-  }, [conversations, query]);
+  }, [query, visibleConversations]);
 
   return (
     <div className="grid gap-4">

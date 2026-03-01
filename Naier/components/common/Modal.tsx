@@ -63,9 +63,9 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
           visible ? "translate-y-0 scale-100" : "translate-y-2 scale-[0.98]"
         }`}
       >
-        {(title || onClose) && (
+        {title ? (
           <div className="mb-4 flex items-center justify-between gap-4">
-            {title ? <h2 className="text-lg font-semibold">{title}</h2> : <div />}
+            <h2 className="text-lg font-semibold">{title}</h2>
             <button
               className="rounded-full border border-zinc-800 px-3 py-1 text-sm text-zinc-300"
               onClick={onClose}
@@ -74,7 +74,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
               Close
             </button>
           </div>
-        )}
+        ) : null}
         {children}
       </div>
     </div>

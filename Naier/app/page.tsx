@@ -1,19 +1,28 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { KeySetup } from "@/components/auth/KeySetup";
 import { useAuthStore } from "@/store/authStore";
 
+function getSafeNextPath(value: string | null): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "/chat";
+  }
+
+  return value;
+}
+
 export default function HomePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
   useEffect(() => {
     if (isLoggedIn) {
-      router.push("/chat");
+      router.push(getSafeNextPath(searchParams.get("next")));
     }
-  }, [isLoggedIn, router]);
+  }, [isLoggedIn, router, searchParams]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-6 py-10">

@@ -7,7 +7,7 @@ interface CopyButtonProps {
   label?: string;
 }
 
-export function CopyButton({ text, label = "복사" }: CopyButtonProps) {
+export function CopyButton({ text, label = "Copy" }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -24,7 +24,7 @@ export function CopyButton({ text, label = "복사" }: CopyButtonProps) {
       onClick={handleCopy}
       type="button"
     >
-      {copied ? "복사됨" : label}
+      {copied ? "Copied" : label}
     </button>
   );
 }

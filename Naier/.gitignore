@@ -2,3 +2,7 @@
 node_modules
 .env.local
 dist
+.vite
+*.log
+.dev-server*.log
+*.tsbuildinfo

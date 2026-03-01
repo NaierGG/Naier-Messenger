@@ -37,6 +37,23 @@ const navItems = [
     )
   },
   {
+    href: "/invite",
+    label: "Invite",
+    icon: (
+      <svg
+        aria-hidden="true"
+        className="h-5 w-5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+      >
+        <path d="M4 12h16" />
+        <path d="m12 4 8 8-8 8" />
+      </svg>
+    )
+  },
+  {
     href: "/settings",
     label: "Settings",
     icon: (
@@ -65,6 +82,7 @@ export function MobileNav() {
           const isActive =
             pathname === item.href ||
             (item.href !== "/chat/new" &&
+              item.href !== "/invite" &&
               item.href !== "/settings" &&
               pathname.startsWith(item.href));
 

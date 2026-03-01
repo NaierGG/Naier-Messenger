@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ProfileCard } from "@/components/profile/ProfileCard";
+import { verifyNip05 } from "@/lib/nostr/nip05";
 import { npubToPubkey } from "@/lib/nostr/keys";
 import { isValidNip05, isValidNpub } from "@/lib/utils/validation";
-import { verifyNip05 } from "@/lib/nostr/nip05";
-import { ProfileCard } from "@/components/profile/ProfileCard";
 
 async function resolveNip05Pubkey(nip05: string): Promise<string | null> {
   const match = nip05.trim().match(/^([^@\s]+)@([^@\s]+\.[^@\s]+)$/);
@@ -143,7 +143,7 @@ export function NewDMForm() {
         onClick={() => router.push(`/chat/${resolvedPubkey}`)}
         type="button"
       >
-        DM 시작
+        Start DM
       </button>
     </div>
   );

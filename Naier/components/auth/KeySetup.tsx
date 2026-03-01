@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CopyButton } from "@/components/common/CopyButton";
 import { generateKeyPair, nsecToKeyPair } from "@/lib/nostr/keys";
 import { saveKeys } from "@/lib/storage/keyStorage";
@@ -38,12 +38,22 @@ function TabButton({
 
 export function KeySetup() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>("generate");
   const [generatedKeyPair, setGeneratedKeyPair] = useState<NostrKeyPair | null>(null);
   const [nsec, setNsec] = useState("");
   const [showNsec, setShowNsec] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const isValid = useMemo(() => (nsec ? isValidNsec(nsec) : false), [nsec]);
+  const nextPath = useMemo(() => {
+    const value = searchParams.get("next");
+
+    if (!value || !value.startsWith("/") || value.startsWith("//")) {
+      return "/chat";
+    }
+
+    return value;
+  }, [searchParams]);
 
   function handleGenerate(): void {
     const keyPair = generateKeyPair();
@@ -58,7 +68,7 @@ export function KeySetup() {
       return;
     }
 
-    router.push("/chat");
+    router.push(nextPath);
   }
 
   function handleLogin(): void {
@@ -67,7 +77,7 @@ export function KeySetup() {
       saveKeys(keyPair);
       authStore.getState().setKeys(keyPair);
       setErrorMessage("");
-      router.push("/chat");
+      router.push(nextPath);
     } catch {
       setErrorMessage("Please enter a valid nsec key.");
     }

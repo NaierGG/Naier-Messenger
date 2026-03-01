@@ -108,6 +108,8 @@ NEXT_PUBLIC_APP_NAME="Naier"
 npm run dev
 ```
 
+Open `http://localhost:3000` after the dev server starts.
+
 ### Type check
 
 ```bash
@@ -120,6 +122,23 @@ npm run typecheck
 npm run build
 npm run start
 ```
+
+## Invite Links
+
+Naier supports direct invite links using the `/add/<npub>` route.
+
+Invite flow:
+
+- signed-in users can open `/invite` and copy a shareable invite link,
+- opening `/add/<npub>` renders a confirmation screen directly,
+- after confirmation, the contact is stored locally and Naier opens a DM with that pubkey,
+- if the recipient is not signed in yet, Naier sends them through key setup and returns them to the same invite automatically.
+
+Current MVP scope:
+
+- contact persistence is local to the current browser,
+- direct invite links are the primary sharing path,
+- QR-based sharing is not included in this pass.
 
 ## Security Notes
 

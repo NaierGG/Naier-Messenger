@@ -57,6 +57,19 @@ export function SidebarHeader() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <IconButton label="Invite" onClick={() => router.push("/invite")}>
+            <svg
+              aria-hidden="true"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M4 12h16" />
+              <path d="m12 4 8 8-8 8" />
+            </svg>
+          </IconButton>
           <IconButton label="New DM" onClick={() => router.push("/chat/new")}>
             <svg
               aria-hidden="true"
