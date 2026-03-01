@@ -1,7 +1,7 @@
 "use client";
 
-import type { NostrRelay } from "@/types/nostr";
 import { RelayStatusDot } from "@/components/relay/RelayStatusDot";
+import type { NostrRelay } from "@/types/nostr";
 
 interface RelayItemProps {
   relay: NostrRelay;
@@ -43,7 +43,7 @@ export function RelayItem({ relay, onRemove }: RelayItemProps) {
           onClick={() => onRemove(relay.url)}
           type="button"
         >
-          삭제
+          Remove
         </button>
       </div>
     </div>

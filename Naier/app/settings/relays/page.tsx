@@ -8,7 +8,7 @@ export default function RelaySettingsPage() {
         <div>
           <h1 className="text-3xl font-semibold text-zinc-100">Relay Management</h1>
           <p className="mt-2 text-sm text-zinc-400">
-            Review relay endpoints and connection status.
+            Review the DM inbox relays that Naier publishes as your `kind 10050` policy.
           </p>
         </div>
         <div className="flex items-center gap-3">

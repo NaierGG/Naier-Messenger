@@ -2,23 +2,26 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { RelayItem } from "@/components/relay/RelayItem";
+import { useToast } from "@/hooks/useToast";
 import { nostrClient } from "@/lib/nostr/client";
 import { isValidRelayUrl } from "@/lib/utils/validation";
 import { useRelayStore } from "@/store/relayStore";
 
 export function RelayList() {
+  const { info, success } = useToast();
   const relays = useRelayStore((state) => state.relays);
   const addRelay = useRelayStore((state) => state.addRelay);
   const removeRelay = useRelayStore((state) => state.removeRelay);
-  const initRelays = useRelayStore((state) => state.initRelays);
+  const hydrate = useRelayStore((state) => state.hydrate);
+  const resetRelays = useRelayStore((state) => state.resetRelays);
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (relays.length === 0) {
-      initRelays();
+      hydrate();
     }
-  }, [initRelays, relays.length]);
+  }, [hydrate, relays.length]);
 
   const connectedCount = useMemo(
     () => relays.filter((relay) => relay.status === "connected").length,
@@ -46,15 +49,37 @@ export function RelayList() {
     syncRelays([...relays.map((relay) => relay.url), trimmed]);
     setUrl("");
     setError("");
+    success("Relay added. Naier will publish your DM inbox relay list automatically.");
   }
 
   function handleRemove(targetUrl: string) {
+    if (relays.length <= 1) {
+      setError("Keep at least one relay so Naier can receive wrapped messages.");
+      return;
+    }
+
+    const nextUrls = relays.filter((relay) => relay.url !== targetUrl).map((relay) => relay.url);
     removeRelay(targetUrl);
-    syncRelays(relays.filter((relay) => relay.url !== targetUrl).map((relay) => relay.url));
+    syncRelays(nextUrls);
+    setError("");
+    info("Relay removed. Your DM inbox relay list will update on the next sync.");
+  }
+
+  function handleReset() {
+    resetRelays();
+    const nextUrls = useRelayStore.getState().relays.map((relay) => relay.url);
+    syncRelays(nextUrls);
+    setError("");
+    success("Default relay set restored.");
   }
 
   return (
     <div className="grid gap-4">
+      <div className="rounded-2xl border border-sky-500/20 bg-sky-500/10 p-4 text-sm leading-6 text-sky-100">
+        These relays are your DM inbox relays. Naier publishes them as a `kind 10050`
+        list and uses them for wrapped-message delivery and subscription.
+      </div>
+
       <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-4 text-sm text-zinc-300">
         Connected relays:{" "}
         <span className="font-semibold text-zinc-100">
@@ -85,6 +110,13 @@ export function RelayList() {
             type="button"
           >
             Add
+          </button>
+          <button
+            className="rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-700 hover:bg-zinc-800"
+            onClick={handleReset}
+            type="button"
+          >
+            Restore Defaults
           </button>
         </div>
         {error ? <p className="mt-3 text-sm text-red-300">{error}</p> : null}

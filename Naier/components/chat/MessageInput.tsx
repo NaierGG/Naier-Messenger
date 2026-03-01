@@ -21,7 +21,7 @@ export function MessageInput({
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const trimmed = value.trim();
-  const isOverLimit = value.length > MAX_MESSAGE_LENGTH;
+  const isOverLimit = new TextEncoder().encode(value).length > MAX_MESSAGE_LENGTH;
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -56,14 +56,14 @@ export function MessageInput({
               void handleSend();
             }
           }}
-          placeholder="메시지를 입력하세요"
+          placeholder="Type a message"
           ref={textareaRef}
           rows={1}
           value={value}
         />
         <div className="mt-3 flex items-center justify-between gap-3">
           <span className={`text-xs ${isOverLimit ? "text-red-300" : "text-zinc-500"}`}>
-            {value.length}/{MAX_MESSAGE_LENGTH}
+            {new TextEncoder().encode(value).length}/{MAX_MESSAGE_LENGTH} bytes
           </span>
           <button
             className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
@@ -74,7 +74,7 @@ export function MessageInput({
             type="button"
           >
             {isLoading ? <LoadingSpinner size="sm" /> : null}
-            <span>전송</span>
+            <span>Send</span>
           </button>
         </div>
       </div>

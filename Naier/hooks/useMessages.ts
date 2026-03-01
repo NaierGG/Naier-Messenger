@@ -26,6 +26,22 @@ interface PublishOptions {
   senderPrivkey: string;
 }
 
+function normalizePublishError(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return "Failed to send message.";
+  }
+
+  if (error.message === "Recipient has no published DM relays (kind 10050).") {
+    return "This contact has not published DM inbox relays yet. Ask them to open Naier so their kind 10050 relay list can be published.";
+  }
+
+  if (error.message === "No valid relay URLs are available.") {
+    return "No valid relays are configured. Add at least one DM inbox relay in Settings.";
+  }
+
+  return error.message || "Failed to send message.";
+}
+
 async function persistCurrentMessage(messageId: string): Promise<void> {
   const current = chatStore.getState().getMessageById(messageId);
 
@@ -165,8 +181,7 @@ export function useMessages(recipientPubkey: string): {
         senderPrivkey: privkey
       });
     } catch (caughtError) {
-      const message =
-        caughtError instanceof Error ? caughtError.message : "Failed to send message.";
+      const message = normalizePublishError(caughtError);
 
       chatStore.getState().updateMessageStatus(optimisticMessage.id, "failed");
       await persistCurrentMessage(optimisticMessage.id);
@@ -203,8 +218,7 @@ export function useMessages(recipientPubkey: string): {
         senderPrivkey: privkey
       });
     } catch (caughtError) {
-      const message =
-        caughtError instanceof Error ? caughtError.message : "Failed to retry message.";
+      const message = normalizePublishError(caughtError);
 
       chatStore.getState().updateMessageStatus(messageId, "failed");
       await persistCurrentMessage(messageId);

@@ -21,6 +21,12 @@ export function useNostrSubscribe(): { isSubscribed: boolean } {
     }
 
     const relayUrls = relays.map((relay) => relay.url);
+
+    if (relayUrls.length === 0) {
+      setIsSubscribed(false);
+      return;
+    }
+
     nostrClient.updateRelays(relayUrls);
 
     if (relayUrls.length > 0) {
