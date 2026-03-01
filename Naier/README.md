@@ -12,7 +12,7 @@ The current project goal is to provide a lightweight web messenger that lets a u
 - send encrypted direct messages,
 - cache keys, profiles, and messages locally for a smoother experience.
 
-This repository is currently closer to an early MVP than a production-ready messenger. The core UI structure and local state model exist, but security hardening, protocol completeness, and reliability work are still needed.
+This repository is currently closer to an early MVP than a production-ready messenger. The core UI structure and local state model exist, but security hardening and long-term protocol hardening are still needed.
 
 ## Why This Project Exists
 
@@ -34,6 +34,7 @@ Implemented or partially implemented:
 - direct-message compose flow,
 - Nostr event creation and publication,
 - relay selection and relay status UI,
+- relay failover, cooldown blacklisting, and recent-message resync,
 - local caching for messages and profiles,
 - account and settings screens,
 - profile display components.
@@ -158,15 +159,22 @@ Before a public launch, key handling and protocol correctness need a dedicated s
 
 ## Relay Model
 
-The project ships with a default relay list in code. Users can add and remove relays from the UI, and the active `nostrClient` instance is updated in memory. At the moment, relay configuration is not persisted across reloads: `chat/layout.tsx` reinitializes relay state from the default list on mount.
+The project ships with a default relay list in code. Users can add and remove relays from the UI, and the active `nostrClient` instance updates immediately while the relay preference is persisted locally.
 
-Relay behavior should still be treated as unstable until the following are improved:
+Relay behavior currently includes:
 
-- validation and normalization of relay URLs,
-- better connection health reporting,
-- reconnect and backoff strategies,
+- per-relay connection and publish metrics,
+- cooldown-based avoidance for unhealthy relays,
+- publish retry/failover across healthy relays,
+- a manual resync action for the last 24 hours of wrapped DMs.
+
+Still incomplete:
+
 - read/write relay separation,
-- relay list persistence and migration policy.
+- longer-term relay reputation scoring,
+- NIP-07 support,
+- encrypted local key storage,
+- offline inbox fallback.
 
 Current defaults in `constants/index.ts`:
 

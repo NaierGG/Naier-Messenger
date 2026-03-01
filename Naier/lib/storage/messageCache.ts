@@ -89,7 +89,11 @@ export async function getMessages(conversationKey: string): Promise<NostrMessage
   const db = await initDB();
   const messages = await db.getAllFromIndex("messages", "by_conversation", conversationKey);
 
-  return messages.sort((left, right) => left.createdAt - right.createdAt);
+  return messages.sort((left, right) =>
+    left.createdAt === right.createdAt
+      ? left.id.localeCompare(right.id)
+      : left.createdAt - right.createdAt
+  );
 }
 
 export async function clearAll(): Promise<void> {

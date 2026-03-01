@@ -11,16 +11,16 @@ import { useRelayStore } from "@/store/relayStore";
 export function useNostrSubscribe(): { isSubscribed: boolean } {
   const privkey = useAuthStore((state) => state.privkey);
   const pubkey = useAuthStore((state) => state.pubkey);
-  const relays = useRelayStore((state) => state.relays);
+  const relayKey = useRelayStore((state) => state.relays.map((relay) => relay.url).join("|"));
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
+    const relayUrls = relayKey ? relayKey.split("|").filter(Boolean) : [];
+
     if (!pubkey || !privkey) {
       setIsSubscribed(false);
       return;
     }
-
-    const relayUrls = relays.map((relay) => relay.url);
 
     if (relayUrls.length === 0) {
       setIsSubscribed(false);
@@ -33,6 +33,20 @@ export function useNostrSubscribe(): { isSubscribed: boolean } {
       const relayListEvent = createInboxRelayListEvent(relayUrls, privkey);
       void nostrClient.publishToRelays(relayListEvent, relayUrls);
     }
+
+    const since = Math.floor(Date.now() / 1000) - 24 * 60 * 60;
+    void nostrClient.queryGiftWraps(pubkey, since, relayUrls).then((wrappedEvents) => {
+      wrappedEvents.forEach((event) => {
+        const message = parseWrappedMessage(event, privkey, pubkey);
+
+        if (!message) {
+          return;
+        }
+
+        chatStore.getState().addMessage(message);
+        void saveMessage(message);
+      });
+    });
 
     const unsubscribe = nostrClient.subscribeDMs(
       pubkey,
@@ -52,10 +66,9 @@ export function useNostrSubscribe(): { isSubscribed: boolean } {
     );
 
     return () => {
-      setIsSubscribed(false);
       unsubscribe();
     };
-  }, [privkey, pubkey, relays]);
+  }, [privkey, pubkey, relayKey]);
 
   return { isSubscribed };
 }

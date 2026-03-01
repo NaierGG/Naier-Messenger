@@ -9,7 +9,15 @@ interface SidebarProps {
 }
 
 export function Sidebar({ className = "" }: SidebarProps) {
-  const { connectedCount, totalCount, isConnected } = useRelayStatus();
+  const { connectedCount, totalCount, isConnected, overallStatus } = useRelayStatus();
+  const summaryLabel =
+    overallStatus === "connecting"
+      ? "Connecting"
+      : overallStatus === "degraded"
+        ? "Degraded"
+        : isConnected
+          ? "Healthy"
+          : "Offline";
 
   return (
     <aside
@@ -28,10 +36,15 @@ export function Sidebar({ className = "" }: SidebarProps) {
             <p className="mt-1 text-sm font-medium text-zinc-100">
               {connectedCount}/{totalCount} connected
             </p>
+            <p className="mt-1 text-xs text-zinc-500">{summaryLabel}</p>
           </div>
           <span
             className={`inline-flex h-3 w-3 rounded-full ${
-              isConnected ? "bg-emerald-400" : "bg-red-400"
+              overallStatus === "connected"
+                ? "bg-emerald-400"
+                : overallStatus === "degraded" || overallStatus === "connecting"
+                  ? "bg-amber-400"
+                  : "bg-red-400"
             }`}
           />
         </div>

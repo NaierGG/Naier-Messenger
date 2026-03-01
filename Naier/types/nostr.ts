@@ -36,6 +36,13 @@ export interface NostrRelay {
   url: string;
   status: "connecting" | "connected" | "disconnected" | "error";
   latency?: number;
+  lastError?: string;
+  recentErrors: number;
+  publishAttempts: number;
+  publishSuccesses: number;
+  successRate: number;
+  cooldownUntil?: number;
+  lastCheckedAt?: number;
 }
 
 export interface Conversation {

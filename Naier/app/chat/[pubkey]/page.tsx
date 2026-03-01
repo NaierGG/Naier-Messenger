@@ -15,7 +15,8 @@ interface ChatRoomPageProps {
 
 export default function ChatRoomPage({ params }: ChatRoomPageProps) {
   const pubkey = params.pubkey;
-  const { messages, sendMessage, retryMessage, isLoading } = useMessages(pubkey);
+  const { messages, sendMessage, retryMessage, resyncMessages, isLoading, isResyncing } =
+    useMessages(pubkey);
 
   useEffect(() => {
     if (!pubkey) {
@@ -27,7 +28,7 @@ export default function ChatRoomPage({ params }: ChatRoomPageProps) {
 
   return (
     <main className="flex min-h-screen flex-1 flex-col">
-      <TopBar pubkey={pubkey} />
+      <TopBar isResyncing={isResyncing} onResync={() => void resyncMessages(24)} pubkey={pubkey} />
       <MessageList isLoading={isLoading} messages={messages} onRetry={retryMessage} />
       <MessageInput disabled={!pubkey} isLoading={isLoading} onSend={sendMessage} />
     </main>

@@ -1,11 +1,10 @@
 import type { Event as NostrEvent, Filter } from "nostr-tools";
 import { SimplePool } from "nostr-tools/pool";
 import { DEFAULT_RELAYS, NOSTR_KINDS } from "@/constants";
+import { relayManager } from "@/lib/nostr/relayManager";
 import { isValidRelayUrl } from "@/lib/utils/validation";
-import { relayStore } from "@/store/relayStore";
 
 type Unsubscribe = () => void;
-type RelayConnectionState = "connecting" | "connected" | "disconnected" | "error";
 
 export class NostrClient {
   private pool: SimplePool;
@@ -13,24 +12,18 @@ export class NostrClient {
   private subscriptions: Map<string, Unsubscribe>;
 
   constructor(relayUrls: string[]) {
-    this.pool = new SimplePool();
+    this.pool = new SimplePool({
+      enablePing: true,
+      enableReconnect: true,
+      onRelayConnectionSuccess: (url: string) => {
+        relayManager.noteConnectionSuccess(url);
+      },
+      onRelayConnectionFailure: (url: string) => {
+        relayManager.noteConnectionFailure(url, "Relay connection failed.");
+      }
+    } as never);
     this.relayUrls = [...new Set(relayUrls)];
     this.subscriptions = new Map<string, Unsubscribe>();
-  }
-
-  private setRelayStatuses(relayUrls: string[], status: RelayConnectionState): void {
-    relayUrls.forEach((url) => {
-      relayStore.getState().updateStatus(url, status);
-    });
-  }
-
-  private syncRelayStatuses(relayUrls: string[]): void {
-    const connectionStatus = this.pool.listConnectionStatus();
-
-    relayUrls.forEach((url) => {
-      const isConnected = connectionStatus.get(url);
-      relayStore.getState().updateStatus(url, isConnected ? "connected" : "disconnected");
-    });
   }
 
   updateRelays(urls: string[]): void {
@@ -53,18 +46,13 @@ export class NostrClient {
         kinds: [NOSTR_KINDS.DM_GIFT_WRAP],
         "#p": [myPubkey]
       };
-      this.setRelayStatuses(this.relayUrls, "connecting");
 
-      const subscription = this.pool.subscribe(this.relayUrls, filter, {
+      const subscription = relayManager.subscribeWithFailover(this.pool, this.relayUrls, filter, {
         onevent(event) {
           onEvent(event);
         },
         oneose: () => {
-          this.syncRelayStatuses(this.relayUrls);
           onEose?.();
-        },
-        onclose: () => {
-          this.syncRelayStatuses(this.relayUrls);
         }
       });
 
@@ -91,45 +79,28 @@ export class NostrClient {
 
   async publishToRelays(
     event: NostrEvent,
-    relayUrls: string[]
-  ): Promise<{ success: boolean; acks: number; error?: string }> {
+    relayUrls: string[],
+    minSuccess = 1
+  ): Promise<{
+    success: boolean;
+    acks: number;
+    attemptedRelays: string[];
+    failedRelays: string[];
+    error?: string;
+  }> {
     const uniqueRelayUrls = [...new Set(relayUrls)].filter((url) => isValidRelayUrl(url));
 
     if (uniqueRelayUrls.length === 0) {
       return {
         success: false,
         acks: 0,
+        attemptedRelays: [],
+        failedRelays: [],
         error: "No valid relay URLs are available."
       };
     }
 
-    try {
-      this.setRelayStatuses(uniqueRelayUrls, "connecting");
-      const publishPromises = this.pool.publish(uniqueRelayUrls, event);
-      const results = await Promise.allSettled(publishPromises);
-
-      results.forEach((result, index) => {
-        relayStore
-          .getState()
-          .updateStatus(uniqueRelayUrls[index], result.status === "fulfilled" ? "connected" : "error");
-      });
-
-      this.syncRelayStatuses(uniqueRelayUrls);
-      const acks = results.filter((result) => result.status === "fulfilled").length;
-
-      return {
-        success: acks > 0,
-        acks,
-        error: acks > 0 ? undefined : "Failed to publish event."
-      };
-    } catch (error) {
-      this.setRelayStatuses(uniqueRelayUrls, "error");
-      return {
-        success: false,
-        acks: 0,
-        error: error instanceof Error ? error.message : "Failed to publish event."
-      };
-    }
+    return relayManager.publishWithRetry(this.pool, event, uniqueRelayUrls, minSuccess);
   }
 
   async publish(event: NostrEvent): Promise<{ success: boolean; error?: string }> {
@@ -143,7 +114,7 @@ export class NostrClient {
 
   async fetchProfile(pubkey: string): Promise<NostrEvent | null> {
     try {
-      return await this.pool.get(this.relayUrls, {
+      return await this.pool.get(relayManager.getHealthyRelays(this.relayUrls), {
         kinds: [NOSTR_KINDS.METADATA],
         authors: [pubkey]
       });
@@ -154,7 +125,7 @@ export class NostrClient {
 
   async fetchInboxRelays(pubkey: string): Promise<string[]> {
     try {
-      const relayListEvent = await this.pool.get(this.relayUrls, {
+      const relayListEvent = await this.pool.get(relayManager.getHealthyRelays(this.relayUrls), {
         kinds: [NOSTR_KINDS.DM_RELAY_LIST],
         authors: [pubkey]
       });
@@ -172,6 +143,43 @@ export class NostrClient {
     }
   }
 
+  async queryGiftWraps(
+    myPubkey: string,
+    since: number,
+    relayUrls = this.relayUrls
+  ): Promise<NostrEvent[]> {
+    try {
+      const activeRelays = relayManager.getHealthyRelays(relayUrls);
+      const startedAt = Date.now();
+      relayManager.markConnecting(activeRelays);
+
+      const events = await this.pool.querySync(activeRelays, {
+        kinds: [NOSTR_KINDS.DM_GIFT_WRAP],
+        "#p": [myPubkey],
+        since
+      });
+
+      activeRelays.forEach((relayUrl) => {
+        relayManager.noteConnectionSuccess(relayUrl, Date.now() - startedAt);
+      });
+
+      const deduped = new Map<string, NostrEvent>();
+      events.forEach((event) => {
+        deduped.set(event.id, event);
+      });
+
+      return Array.from(deduped.values());
+    } catch (error) {
+      relayManager.getHealthyRelays(relayUrls).forEach((relayUrl) => {
+        relayManager.noteConnectionFailure(
+          relayUrl,
+          error instanceof Error ? error.message : "Resync failed."
+        );
+      });
+      return [];
+    }
+  }
+
   disconnect(): void {
     this.subscriptions.forEach((unsubscribe) => {
       try {
@@ -182,7 +190,7 @@ export class NostrClient {
     this.subscriptions.clear();
 
     try {
-      this.pool.close(this.relayUrls);
+      this.pool.close(this.relayUrls.length > 0 ? this.relayUrls : DEFAULT_RELAYS);
     } catch {}
   }
 }

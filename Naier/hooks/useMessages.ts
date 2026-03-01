@@ -8,6 +8,7 @@ import {
   createOptimisticMessageFromRumor,
   createWrappedDMEvents,
   getConversationKey,
+  parseWrappedMessage,
   type NostrRumor
 } from "@/lib/nostr/events";
 import { saveMessage } from "@/lib/storage/messageCache";
@@ -54,7 +55,9 @@ export function useMessages(recipientPubkey: string): {
   messages: NostrMessage[];
   sendMessage: (text: string) => Promise<void>;
   retryMessage: (messageId: string) => Promise<void>;
+  resyncMessages: (hours?: number) => Promise<void>;
   isLoading: boolean;
+  isResyncing: boolean;
   error: string | null;
 } {
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
@@ -68,6 +71,7 @@ export function useMessages(recipientPubkey: string): {
     conversationKey ? state.getMessages(conversationKey) : []
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [isResyncing, setIsResyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -103,10 +107,7 @@ export function useMessages(recipientPubkey: string): {
     nostrClient.updateRelays(relayUrls);
 
     const recipientRelayUrls = await nostrClient.fetchInboxRelays(recipient);
-
-    if (recipientRelayUrls.length === 0) {
-      throw new Error("Recipient has no published DM relays (kind 10050).");
-    }
+    const effectiveRecipientRelayUrls = recipientRelayUrls.length > 0 ? recipientRelayUrls : relayUrls;
 
     const selfRelayUrls =
       relayUrls.length > 0 ? relayUrls : await nostrClient.fetchInboxRelays(senderPubkey);
@@ -119,7 +120,7 @@ export function useMessages(recipientPubkey: string): {
     );
 
     const [recipientResult, selfResult] = await Promise.all([
-      nostrClient.publishToRelays(recipientWrap, recipientRelayUrls),
+      nostrClient.publishToRelays(recipientWrap, effectiveRecipientRelayUrls),
       nostrClient.publishToRelays(selfWrap, selfRelayUrls)
     ]);
 
@@ -233,11 +234,67 @@ export function useMessages(recipientPubkey: string): {
     }
   }
 
+  async function resyncMessages(hours = 24): Promise<void> {
+    const { privkey, pubkey } = authStore.getState();
+
+    if (!privkey || !pubkey) {
+      return;
+    }
+
+    setIsResyncing(true);
+    setError(null);
+
+    try {
+      nostrClient.updateRelays(relayUrls);
+      const since = Math.floor(Date.now() / 1000) - hours * 60 * 60;
+      const wrappedEvents = await nostrClient.queryGiftWraps(pubkey, since, relayUrls);
+      let importedCount = 0;
+
+      for (const wrappedEvent of wrappedEvents) {
+        const message = parseWrappedMessage(wrappedEvent, privkey, pubkey);
+
+        if (!message) {
+          continue;
+        }
+
+        const alreadyExists = Boolean(chatStore.getState().getMessageById(message.id));
+
+        if (!alreadyExists && message.conversationKey === conversationKey) {
+          importedCount += 1;
+        }
+
+        chatStore.getState().addMessage(message);
+        await saveMessage(message);
+      }
+
+      uiStore.getState().addToast({
+        type: "success",
+        message:
+          importedCount > 0
+            ? `Resynced ${importedCount} recent message${importedCount === 1 ? "" : "s"}.`
+            : "Resync completed. No new recent messages were found.",
+        duration: 4000
+      });
+    } catch (caughtError) {
+      const message = normalizePublishError(caughtError);
+      setError(message);
+      uiStore.getState().addToast({
+        type: "error",
+        message,
+        duration: 5000
+      });
+    } finally {
+      setIsResyncing(false);
+    }
+  }
+
   return {
     messages,
     sendMessage,
     retryMessage,
+    resyncMessages,
     isLoading,
+    isResyncing,
     error
   };
 }

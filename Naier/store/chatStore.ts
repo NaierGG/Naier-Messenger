@@ -5,6 +5,7 @@ import type { Conversation, MessageStatus, NostrMessage } from "@/types/nostr";
 
 interface ChatState {
   messages: Record<string, NostrMessage[]>;
+  seenMessageIds: Record<string, true>;
   conversations: Conversation[];
   addMessage: (msg: NostrMessage) => void;
   updateMessageStatus: (id: string, status: MessageStatus) => void;
@@ -40,24 +41,27 @@ function upsertConversation(
 export const useChatStore = create<ChatState>()(
   immer((set, get) => ({
     messages: {},
+    seenMessageIds: {},
     conversations: [],
     addMessage: (msg) => {
       const conversationKey = msg.conversationKey;
       const peerPubkey = msg.peerPubkey;
 
       set((state) => {
-        const currentMessages = state.messages[conversationKey] ?? [];
-        const existing = currentMessages.find((message) => message.id === msg.id);
+        if (state.seenMessageIds[msg.id]) {
+          const existingMessages = state.messages[conversationKey] ?? [];
+          const existing = existingMessages.find((message) => message.id === msg.id);
 
-        if (existing) {
-          if (existing.status !== msg.status && msg.status === "sent") {
+          if (existing && existing.status !== msg.status && msg.status === "sent") {
             existing.status = "sent";
           }
           return;
         }
 
+        const currentMessages = state.messages[conversationKey] ?? [];
         const nextMessages = sortMessages([...currentMessages, msg]);
         state.messages[conversationKey] = nextMessages;
+        state.seenMessageIds[msg.id] = true;
 
         state.conversations = upsertConversation(
           state.conversations,
@@ -134,6 +138,9 @@ export const useChatStore = create<ChatState>()(
 
         const nextMessages = sortMessages(Array.from(merged.values()));
         state.messages[conversationKey] = nextMessages;
+        nextMessages.forEach((message) => {
+          state.seenMessageIds[message.id] = true;
+        });
 
         if (nextMessages.length === 0) {
           return;
