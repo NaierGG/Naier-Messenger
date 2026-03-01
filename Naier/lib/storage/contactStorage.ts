@@ -18,16 +18,32 @@ export function loadContacts(): Contact[] {
       return [];
     }
 
-    const parsed = JSON.parse(raw) as Contact[];
+    const parsed = JSON.parse(raw) as Array<Partial<Contact>>;
 
     if (!Array.isArray(parsed)) {
       return [];
     }
 
-    return parsed.filter(
-      (contact) =>
-        typeof contact?.pubkey === "string" && typeof contact?.addedAt === "number"
-    );
+    return parsed.flatMap((contact) => {
+      if (typeof contact?.pubkey !== "string" || typeof contact?.addedAt !== "number") {
+        return [];
+      }
+
+      const status =
+        contact.status === "pending" ||
+        contact.status === "dismissed" ||
+        contact.status === "blocked"
+          ? contact.status
+          : "accepted";
+
+      return [
+        {
+          pubkey: contact.pubkey,
+          addedAt: contact.addedAt,
+          status
+        }
+      ];
+    });
   } catch {
     return [];
   }

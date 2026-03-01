@@ -6,6 +6,7 @@ import { ProfileCard } from "@/components/profile/ProfileCard";
 import { verifyNip05 } from "@/lib/nostr/nip05";
 import { npubToPubkey } from "@/lib/nostr/keys";
 import { isValidNip05, isValidNpub } from "@/lib/utils/validation";
+import { useContactStore } from "@/store/contactStore";
 
 async function resolveNip05Pubkey(nip05: string): Promise<string | null> {
   const match = nip05.trim().match(/^([^@\s]+)@([^@\s]+\.[^@\s]+)$/);
@@ -37,6 +38,7 @@ async function resolveNip05Pubkey(nip05: string): Promise<string | null> {
 
 export function NewDMForm() {
   const router = useRouter();
+  const acceptContact = useContactStore((state) => state.acceptContact);
   const [value, setValue] = useState("");
   const [resolvedPubkey, setResolvedPubkey] = useState("");
   const [isResolving, setIsResolving] = useState(false);
@@ -140,7 +142,10 @@ export function NewDMForm() {
       <button
         className="w-fit rounded-full bg-sky-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
         disabled={!resolvedPubkey}
-        onClick={() => router.push(`/chat/${resolvedPubkey}`)}
+        onClick={() => {
+          acceptContact(resolvedPubkey);
+          router.push(`/chat/${resolvedPubkey}`);
+        }}
         type="button"
       >
         Start DM

@@ -38,8 +38,8 @@ export function RelayItem({ relay, onRemove }: RelayItemProps) {
         </div>
         <p className="mt-1 truncate text-xs text-zinc-500">{relay.url}</p>
         <p className="mt-1 text-xs text-zinc-400">
-          Success {relay.successRate}% · Errors {relay.recentErrors}
-          {cooldownLabel ? ` · ${cooldownLabel}` : ""}
+          Success {relay.successRate}% - Errors {relay.recentErrors}
+          {cooldownLabel ? ` - ${cooldownLabel}` : ""}
         </p>
         {relay.lastError ? (
           <p className="mt-1 truncate text-xs text-red-300">{relay.lastError}</p>

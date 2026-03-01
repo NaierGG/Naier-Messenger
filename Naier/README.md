@@ -14,6 +14,17 @@ The current project goal is to provide a lightweight web messenger that lets a u
 
 This repository is currently closer to an early MVP than a production-ready messenger. The core UI structure and local state model exist, but security hardening and long-term protocol hardening are still needed.
 
+## Current DM Protocol Target
+
+Naier's active DM implementation is currently centered on:
+
+- `kind 14` rumors for message content,
+- `kind 13` seals and `kind 1059` gift wraps for transport,
+- `kind 10050` DM inbox relay lists for relay discovery,
+- local optimistic message state on top of relay acknowledgements.
+
+That means the current target is the modern wrapped DM flow, not legacy NIP-04 plaintext DMs. NIP-04 interoperability is not implemented in this repository right now.
+
 ## Why This Project Exists
 
 Most messaging products are either centralized or opinionated around a single server network. Nostr offers a relay-based decentralized event model, which makes it possible to build messaging clients that:
@@ -32,6 +43,9 @@ Implemented or partially implemented:
 - key-based login and local key persistence,
 - chat layout and conversation UI,
 - direct-message compose flow,
+- message requests for unknown inbound contacts,
+- local reject/block controls for inbound requests,
+- DM relay diagnostics for missing `kind 10050` recipient policy,
 - Nostr event creation and publication,
 - relay selection and relay status UI,
 - relay failover, cooldown blacklisting, and recent-message resync,
@@ -41,7 +55,7 @@ Implemented or partially implemented:
 
 Not implemented or not complete:
 
-- end-to-end protocol validation for all modern Nostr DM standards,
+- interoperability with multiple Nostr DM standards beyond the current wrapped DM target,
 - robust message sync across reconnects and multiple relays,
 - delivery receipts and read receipts,
 - message deduplication across relays at scale,
@@ -138,6 +152,8 @@ Invite flow:
 Current MVP scope:
 
 - contact persistence is local to the current browser,
+- unknown inbound DMs stay in a request state until accepted,
+- rejected requests are hidden locally and blocked contacts are ignored locally,
 - direct invite links are the primary sharing path,
 - QR-based sharing is not included in this pass.
 
@@ -167,6 +183,7 @@ Relay behavior currently includes:
 - cooldown-based avoidance for unhealthy relays,
 - publish retry/failover across healthy relays,
 - a manual resync action for the last 24 hours of wrapped DMs.
+- recipient DM inbox relay lookup via `kind 10050`, with chat-level warnings when fallback delivery is being used.
 
 Still incomplete:
 

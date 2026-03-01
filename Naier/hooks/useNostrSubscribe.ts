@@ -6,6 +6,7 @@ import { nostrClient } from "@/lib/nostr/client";
 import { saveMessage } from "@/lib/storage/messageCache";
 import { useAuthStore } from "@/store/authStore";
 import { chatStore } from "@/store/chatStore";
+import { contactStore } from "@/store/contactStore";
 import { useRelayStore } from "@/store/relayStore";
 
 export function useNostrSubscribe(): { isSubscribed: boolean } {
@@ -43,6 +44,14 @@ export function useNostrSubscribe(): { isSubscribed: boolean } {
           return;
         }
 
+        if (!message.isMine && contactStore.getState().isBlocked(message.peerPubkey)) {
+          return;
+        }
+
+        if (!message.isMine && !contactStore.getState().hasContact(message.peerPubkey)) {
+          contactStore.getState().addContact(message.peerPubkey, "pending");
+        }
+
         chatStore.getState().addMessage(message);
         void saveMessage(message);
       });
@@ -55,6 +64,14 @@ export function useNostrSubscribe(): { isSubscribed: boolean } {
 
         if (!message) {
           return;
+        }
+
+        if (!message.isMine && contactStore.getState().isBlocked(message.peerPubkey)) {
+          return;
+        }
+
+        if (!message.isMine && !contactStore.getState().hasContact(message.peerPubkey)) {
+          contactStore.getState().addContact(message.peerPubkey, "pending");
         }
 
         chatStore.getState().addMessage(message);

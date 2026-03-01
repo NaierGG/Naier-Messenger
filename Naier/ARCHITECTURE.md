@@ -24,6 +24,16 @@ The codebase appears optimized for:
 - separating UI state, auth state, relay state, and chat state,
 - maintaining a usable offline-ish local cache for recent data.
 
+## Current Protocol Target
+
+The repository's active direct-message target is:
+
+- `kind 14` rumor payloads,
+- wrapped for transport using NIP-59 `kind 13` seals and `kind 1059` gift wraps,
+- delivered using recipient DM inbox relay discovery from `kind 10050`.
+
+This is the protocol model the current code should be judged against. Legacy NIP-04 DMs are not part of the active target in this repository.
+
 ## Top-Level Modules
 
 ### `app/`
@@ -119,11 +129,13 @@ Notes:
 4. An optimistic local message is created immediately.
 5. The optimistic message is inserted into `chatStore`.
 6. The message is cached locally.
-7. The plaintext is encrypted with sender private key and recipient public key.
-8. A Nostr DM event is created and signed.
-9. `nostrClient.publish` sends the event to configured relays.
-10. On success, the optimistic message status becomes `sent`.
-11. On failure, the message status becomes `failed` and a toast is shown.
+7. A `kind 14` rumor is created for the message payload.
+8. The rumor is wrapped into recipient and self-archive transport events using NIP-59 seal and gift-wrap steps.
+9. Naier attempts to resolve the recipient's DM inbox relays from `kind 10050`.
+10. If the recipient has not published inbox relays, Naier falls back to the local relay set and now surfaces that state in the chat UI.
+11. The recipient wrap is published to the resolved recipient relay targets, and the self-wrap is published to the sender's own relay set.
+12. On success, the optimistic message status becomes `sent`.
+13. On failure, the message status becomes `failed` and a toast is shown.
 
 Key implication:
 
@@ -143,7 +155,7 @@ Important current behavior:
 - conversation ordering is derived from latest message timestamp,
 - read state is local to the client.
 - incoming subscription setup happens inside `useNostrSubscribe`, which is mounted from `app/chat/layout.tsx`.
-- `subscribeDMs` currently filters events by `kinds: [14]` and `#p: [myPubkey]`.
+- `subscribeDMs` filters for wrapped `kind 1059` events tagged to the logged-in pubkey.
 
 ## 4. Profile Resolution
 
@@ -174,7 +186,7 @@ Concrete current behavior:
 - `relayStore.initRelays()` resets relay state from `DEFAULT_RELAYS`.
 - `RelayList` can add and remove relay URLs in-memory.
 - `nostrClient.updateRelays()` updates the shared client instance with the current list.
-- relay settings are not persisted across full page reloads.
+- relay settings are persisted in browser storage and rehydrated on load.
 
 ## State Ownership
 
@@ -217,9 +229,9 @@ Benefit:
 Concrete schema details:
 
 - database name: `naier`
-- database version: `1`
+- database version: `2`
 - object stores: `messages`, `profiles`
-- message index: `by_conversation` on `recipientPubkey`
+- message index: `by_conversation` on `conversationKey`
 
 ## Routing Model
 
@@ -234,7 +246,7 @@ The app uses Next.js App Router, which means:
 
 The following concerns should be treated as active design gaps rather than solved problems:
 
-- which exact Nostr DM standard is the long-term target,
+- how broadly the app should interoperate beyond the current wrapped-DM target,
 - how relay subscriptions are resumed or recovered,
 - how duplicate events are reconciled across relays,
 - how local optimistic IDs map cleanly to published event IDs,

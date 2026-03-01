@@ -34,6 +34,9 @@ Concrete notes:
 - encrypted DM event creation,
 - event publishing through `nostr-tools` pool,
 - local message cache hydration,
+- message requests for unknown inbound contacts,
+- local reject/block controls for unknown inbound contacts,
+- chat-level relay diagnostics for recipient DM inbox policy,
 - message status transitions such as `sending`, `sent`, and `failed`.
 
 Concrete notes:
@@ -41,6 +44,8 @@ Concrete notes:
 - chat subscription is started from `app/chat/layout.tsx`,
 - send flow writes optimistic messages to cache before relay publish resolves,
 - incoming messages are parsed and then appended to store and cache,
+- inbound DMs from unknown pubkeys are added as pending requests until the user accepts them,
+- blocked pubkeys are ignored locally during DM ingestion,
 - cache merge behavior deduplicates by message ID inside `chatStore.loadCachedMessages(...)`.
 
 ### Nostr Integration
@@ -54,8 +59,8 @@ Concrete notes:
 Concrete notes:
 
 - `NOSTR_KINDS.DM` is currently set to `14`,
-- additional constants exist for `DM_SEAL` (`13`) and `DM_GIFT_WRAP` (`1059`), but current subscription and send flow are still centered on kind `14`,
-- this means the code already hints at newer DM models, but the active implementation is not yet fully aligned/documented.
+- the active send flow creates a `kind 14` rumor, then wraps it into `DM_SEAL` (`13`) and `DM_GIFT_WRAP` (`1059`) events,
+- recipient relay lookup uses `kind 10050` DM inbox relay lists and falls back to the local relay set when the contact has not published one.
 
 ### Local Persistence
 

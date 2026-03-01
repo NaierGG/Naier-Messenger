@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ConversationItem } from "@/components/chat/ConversationItem";
 import { ConversationSearch } from "@/components/chat/ConversationSearch";
+import { useToast } from "@/hooks/useToast";
 import { useChatStore } from "@/store/chatStore";
 import { useContactStore } from "@/store/contactStore";
 
@@ -12,6 +13,9 @@ export function ConversationList() {
   const pathname = usePathname();
   const conversations = useChatStore((state) => state.conversations);
   const contacts = useContactStore((state) => state.contacts);
+  const acceptContact = useContactStore((state) => state.acceptContact);
+  const dismissContact = useContactStore((state) => state.dismissContact);
+  const { info } = useToast();
   const [query, setQuery] = useState("");
 
   const visibleConversations = useMemo(() => {
@@ -42,6 +46,42 @@ export function ConversationList() {
     );
   }, [query, visibleConversations]);
 
+  const { chats, requests } = useMemo(() => {
+    const statusByPubkey = new Map(contacts.map((contact) => [contact.pubkey, contact.status]));
+
+    const nextChats = filteredConversations.filter((conversation) => {
+      const status = statusByPubkey.get(conversation.pubkey);
+
+      if (status === "accepted") {
+        return true;
+      }
+
+      if (status === "pending" || status === "dismissed" || status === "blocked") {
+        return false;
+      }
+
+      return conversation.lastMessage?.isMine ?? true;
+    });
+    const nextRequests = filteredConversations.filter((conversation) => {
+      const status = statusByPubkey.get(conversation.pubkey);
+
+      if (status === "pending") {
+        return true;
+      }
+
+      if (status === "dismissed" || status === "blocked") {
+        return false;
+      }
+
+      return !status && conversation.lastMessage?.isMine === false;
+    });
+
+    return {
+      chats: nextChats,
+      requests: nextRequests
+    };
+  }, [contacts, filteredConversations]);
+
   return (
     <div className="grid gap-4">
       <div className="flex items-center justify-between gap-3">
@@ -63,14 +103,56 @@ export function ConversationList() {
         </div>
       ) : (
         <div className="grid gap-2">
-          {filteredConversations.map((conversation) => (
-            <ConversationItem
-              conversation={conversation}
-              isSelected={pathname === `/chat/${conversation.pubkey}`}
-              key={conversation.pubkey}
-              onClick={() => router.push(`/chat/${conversation.pubkey}`)}
-            />
-          ))}
+          {requests.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between px-1 pt-1">
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-amber-300">
+                  Requests
+                </p>
+                <span className="text-xs text-zinc-500">{requests.length}</span>
+              </div>
+              {requests.map((conversation) => (
+                <ConversationItem
+                  conversation={conversation}
+                  isRequest
+                  isSelected={pathname === `/chat/${conversation.pubkey}`}
+                  key={conversation.pubkey}
+                  onAccept={() => {
+                    acceptContact(conversation.pubkey);
+                    router.push(`/chat/${conversation.pubkey}`);
+                  }}
+                  onReject={() => {
+                    dismissContact(conversation.pubkey);
+                    info("Request dismissed.");
+                    if (pathname === `/chat/${conversation.pubkey}`) {
+                      router.push("/chat");
+                    }
+                  }}
+                  onClick={() => router.push(`/chat/${conversation.pubkey}`)}
+                />
+              ))}
+            </>
+          ) : null}
+          {chats.length > 0 ? (
+            <>
+              {requests.length > 0 ? (
+                <div className="flex items-center justify-between px-1 pt-3">
+                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                    Chats
+                  </p>
+                  <span className="text-xs text-zinc-500">{chats.length}</span>
+                </div>
+              ) : null}
+              {chats.map((conversation) => (
+                <ConversationItem
+                  conversation={conversation}
+                  isSelected={pathname === `/chat/${conversation.pubkey}`}
+                  key={conversation.pubkey}
+                  onClick={() => router.push(`/chat/${conversation.pubkey}`)}
+                />
+              ))}
+            </>
+          ) : null}
         </div>
       )}
     </div>

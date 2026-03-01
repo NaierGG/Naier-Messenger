@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useContactStore } from "@/store/contactStore";
 
 const navItems = [
   {
@@ -74,6 +75,9 @@ const navItems = [
 
 export function MobileNav() {
   const pathname = usePathname();
+  const pendingRequestCount = useContactStore(
+    (state) => state.contacts.filter((contact) => contact.status === "pending").length
+  );
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-zinc-800 bg-zinc-950/95 px-4 py-3 backdrop-blur md:hidden">
@@ -96,7 +100,17 @@ export function MobileNav() {
               href={item.href}
               key={item.href}
             >
-              {item.icon}
+              <span className="relative inline-flex">
+                {item.icon}
+                {item.href === "/chat" && pendingRequestCount > 0 ? (
+                  <span
+                    aria-label={`${pendingRequestCount} pending request${pendingRequestCount === 1 ? "" : "s"}`}
+                    className="absolute -right-2 -top-2 inline-flex min-w-[18px] items-center justify-center rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-zinc-950"
+                  >
+                    {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
+                  </span>
+                ) : null}
+              </span>
               <span>{item.label}</span>
             </Link>
           );

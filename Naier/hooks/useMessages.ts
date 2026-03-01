@@ -16,6 +16,7 @@ import { nostrClient } from "@/lib/nostr/client";
 import type { NostrMessage } from "@/types/nostr";
 import { authStore, useAuthStore } from "@/store/authStore";
 import { chatStore, useChatStore } from "@/store/chatStore";
+import { contactStore } from "@/store/contactStore";
 import { useRelayStore } from "@/store/relayStore";
 import { uiStore } from "@/store/uiStore";
 
@@ -170,6 +171,7 @@ export function useMessages(recipientPubkey: string): {
       "sending"
     );
 
+    contactStore.getState().acceptContact(recipientPubkey);
     chatStore.getState().addMessage(optimisticMessage);
     await saveMessage(optimisticMessage);
 

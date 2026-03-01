@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { useProfile } from "@/hooks/useProfile";
 import { authStore, useAuthStore } from "@/store/authStore";
+import { useContactStore } from "@/store/contactStore";
 
 function IconButton({
   label,
@@ -32,6 +33,9 @@ export function SidebarHeader() {
   const router = useRouter();
   const pubkey = useAuthStore((state) => state.pubkey);
   const npub = useAuthStore((state) => state.npub);
+  const pendingRequestCount = useContactStore(
+    (state) => state.contacts.filter((contact) => contact.status === "pending").length
+  );
   const { profile } = useProfile(pubkey ?? undefined);
 
   useEffect(() => {
@@ -50,7 +54,18 @@ export function SidebarHeader() {
             size="md"
           />
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{displayName}</p>
+            <div className="flex items-center gap-2">
+              <p className="truncate text-sm font-semibold">{displayName}</p>
+              {pendingRequestCount > 0 ? (
+                <button
+                  className="inline-flex shrink-0 items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200 transition hover:border-amber-400/40 hover:bg-amber-500/15"
+                  onClick={() => router.push("/chat")}
+                  type="button"
+                >
+                  {pendingRequestCount} Request{pendingRequestCount === 1 ? "" : "s"}
+                </button>
+              ) : null}
+            </div>
             <p className="truncate text-xs text-zinc-400">
               {profile?.nip05 ?? fallbackName}
             </p>

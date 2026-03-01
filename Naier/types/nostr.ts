@@ -52,7 +52,10 @@ export interface Conversation {
   updatedAt: number;
 }
 
+export type ContactStatus = "accepted" | "pending" | "dismissed" | "blocked";
+
 export interface Contact {
   pubkey: string;
   addedAt: number;
+  status: ContactStatus;
 }

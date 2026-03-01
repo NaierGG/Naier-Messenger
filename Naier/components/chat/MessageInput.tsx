@@ -8,6 +8,7 @@ interface MessageInputProps {
   onSend: (text: string) => Promise<void>;
   isLoading: boolean;
   disabled?: boolean;
+  disabledReason?: string;
 }
 
 const lineHeightPx = 24;
@@ -16,7 +17,8 @@ const maxHeightPx = lineHeightPx * 4;
 export function MessageInput({
   onSend,
   isLoading,
-  disabled = false
+  disabled = false,
+  disabledReason
 }: MessageInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -63,7 +65,9 @@ export function MessageInput({
         />
         <div className="mt-3 flex items-center justify-between gap-3">
           <span className={`text-xs ${isOverLimit ? "text-red-300" : "text-zinc-500"}`}>
-            {new TextEncoder().encode(value).length}/{MAX_MESSAGE_LENGTH} bytes
+            {disabled && disabledReason
+              ? disabledReason
+              : `${new TextEncoder().encode(value).length}/${MAX_MESSAGE_LENGTH} bytes`}
           </span>
           <button
             className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
