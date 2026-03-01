@@ -8,13 +8,10 @@ interface ChatState {
   conversations: Conversation[];
   addMessage: (msg: NostrMessage) => void;
   updateMessageStatus: (id: string, status: MessageStatus) => void;
-  getMessages: (pubkey: string) => NostrMessage[];
+  getMessages: (conversationKey: string) => NostrMessage[];
+  getMessageById: (id: string) => NostrMessage | undefined;
   markAsRead: (pubkey: string) => void;
-  loadCachedMessages: (pubkey: string) => Promise<void>;
-}
-
-function getConversationPubkey(msg: NostrMessage): string {
-  return msg.isMine ? msg.recipientPubkey : msg.pubkey;
+  loadCachedMessages: (conversationKey: string, peerPubkey: string) => Promise<void>;
 }
 
 function sortMessages(messages: NostrMessage[]): NostrMessage[] {
@@ -39,23 +36,28 @@ export const useChatStore = create<ChatState>()(
     messages: {},
     conversations: [],
     addMessage: (msg) => {
-      const conversationPubkey = getConversationPubkey(msg);
+      const conversationKey = msg.conversationKey;
+      const peerPubkey = msg.peerPubkey;
 
       set((state) => {
-        const currentMessages = state.messages[conversationPubkey] ?? [];
+        const currentMessages = state.messages[conversationKey] ?? [];
+        const existing = currentMessages.find((message) => message.id === msg.id);
 
-        if (currentMessages.some((message) => message.id === msg.id)) {
+        if (existing) {
+          if (existing.status !== msg.status && msg.status === "sent") {
+            existing.status = "sent";
+          }
           return;
         }
 
         const nextMessages = sortMessages([...currentMessages, msg]);
-        state.messages[conversationPubkey] = nextMessages;
+        state.messages[conversationKey] = nextMessages;
 
         state.conversations = upsertConversation(
           state.conversations,
-          conversationPubkey,
+          peerPubkey,
           (conversation) => ({
-            pubkey: conversationPubkey,
+            pubkey: peerPubkey,
             lastMessage:
               nextMessages[nextMessages.length - 1] ?? conversation?.lastMessage,
             unreadCount: msg.isMine ? conversation?.unreadCount ?? 0 : (conversation?.unreadCount ?? 0) + 1,
@@ -69,8 +71,8 @@ export const useChatStore = create<ChatState>()(
     },
     updateMessageStatus: (id, status) => {
       set((state) => {
-        Object.keys(state.messages).forEach((pubkey) => {
-          const messages = state.messages[pubkey];
+        Object.keys(state.messages).forEach((conversationKey) => {
+          const messages = state.messages[conversationKey];
           const index = messages.findIndex((message) => message.id === id);
 
           if (index === -1) {
@@ -79,14 +81,27 @@ export const useChatStore = create<ChatState>()(
 
           messages[index].status = status;
 
-          const conversation = state.conversations.find((item) => item.pubkey === pubkey);
+          const peerPubkey = messages[index].peerPubkey;
+          const conversation = state.conversations.find((item) => item.pubkey === peerPubkey);
           if (conversation?.lastMessage?.id === id) {
             conversation.lastMessage.status = status;
           }
         });
       });
     },
-    getMessages: (pubkey) => get().messages[pubkey] ?? [],
+    getMessages: (conversationKey) => get().messages[conversationKey] ?? [],
+    getMessageById: (id) => {
+      const conversationMessages = Object.values(get().messages);
+
+      for (const messages of conversationMessages) {
+        const match = messages.find((message) => message.id === id);
+        if (match) {
+          return match;
+        }
+      }
+
+      return undefined;
+    },
     markAsRead: (pubkey) => {
       set((state) => {
         const conversation = state.conversations.find((item) => item.pubkey === pubkey);
@@ -96,11 +111,11 @@ export const useChatStore = create<ChatState>()(
         }
       });
     },
-    loadCachedMessages: async (pubkey) => {
-      const cachedMessages = await getCachedMessages(pubkey);
+    loadCachedMessages: async (conversationKey, peerPubkey) => {
+      const cachedMessages = await getCachedMessages(conversationKey);
 
       set((state) => {
-        const current = state.messages[pubkey] ?? [];
+        const current = state.messages[conversationKey] ?? [];
         const merged = new Map<string, NostrMessage>();
 
         current.forEach((message) => {
@@ -112,18 +127,22 @@ export const useChatStore = create<ChatState>()(
         });
 
         const nextMessages = sortMessages(Array.from(merged.values()));
-        state.messages[pubkey] = nextMessages;
+        state.messages[conversationKey] = nextMessages;
 
         if (nextMessages.length === 0) {
           return;
         }
 
-        state.conversations = upsertConversation(state.conversations, pubkey, (conversation) => ({
-          pubkey,
-          lastMessage: nextMessages[nextMessages.length - 1],
-          unreadCount: conversation?.unreadCount ?? 0,
-          updatedAt: nextMessages[nextMessages.length - 1].createdAt
-        }));
+        state.conversations = upsertConversation(
+          state.conversations,
+          peerPubkey,
+          (conversation) => ({
+            pubkey: peerPubkey,
+            lastMessage: nextMessages[nextMessages.length - 1],
+            unreadCount: conversation?.unreadCount ?? 0,
+            updatedAt: nextMessages[nextMessages.length - 1].createdAt
+          })
+        );
       });
     }
   }))

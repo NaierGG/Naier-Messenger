@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { parseIncomingDM } from "@/lib/nostr/events";
+import { createInboxRelayListEvent, parseWrappedMessage } from "@/lib/nostr/events";
 import { nostrClient } from "@/lib/nostr/client";
 import { saveMessage } from "@/lib/storage/messageCache";
 import { useAuthStore } from "@/store/authStore";
@@ -23,10 +23,15 @@ export function useNostrSubscribe(): { isSubscribed: boolean } {
     const relayUrls = relays.map((relay) => relay.url);
     nostrClient.updateRelays(relayUrls);
 
+    if (relayUrls.length > 0) {
+      const relayListEvent = createInboxRelayListEvent(relayUrls, privkey);
+      void nostrClient.publishToRelays(relayListEvent, relayUrls);
+    }
+
     const unsubscribe = nostrClient.subscribeDMs(
       pubkey,
       (event) => {
-        const message = parseIncomingDM(event, privkey, pubkey);
+        const message = parseWrappedMessage(event, privkey, pubkey);
 
         if (!message) {
           return;

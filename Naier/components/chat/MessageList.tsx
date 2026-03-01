@@ -1,18 +1,19 @@
 "use client";
 
-import type { NostrMessage } from "@/types/nostr";
+import { EmptyState } from "@/components/chat/EmptyState";
+import { MessageBubble } from "@/components/chat/MessageBubble";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { useScrollBottom } from "@/hooks/useScrollBottom";
 import { formatDate, isSameDay } from "@/lib/utils/format";
-import { EmptyState } from "@/components/chat/EmptyState";
-import { MessageBubble } from "@/components/chat/MessageBubble";
+import type { NostrMessage } from "@/types/nostr";
 
 interface MessageListProps {
   messages: NostrMessage[];
   isLoading?: boolean;
+  onRetry?: (messageId: string) => void;
 }
 
-export function MessageList({ messages, isLoading = false }: MessageListProps) {
+export function MessageList({ messages, isLoading = false, onRetry }: MessageListProps) {
   const { scrollRef } = useScrollBottom([messages]);
 
   if (isLoading) {
@@ -37,8 +38,7 @@ export function MessageList({ messages, isLoading = false }: MessageListProps) {
         {messages.map((message, index) => {
           const previousMessage = messages[index - 1];
           const showDateSeparator =
-            !previousMessage ||
-            !isSameDay(previousMessage.createdAt, message.createdAt);
+            !previousMessage || !isSameDay(previousMessage.createdAt, message.createdAt);
 
           return (
             <div className="space-y-3" key={message.id}>
@@ -49,7 +49,7 @@ export function MessageList({ messages, isLoading = false }: MessageListProps) {
                   </span>
                 </div>
               ) : null}
-              <MessageBubble message={message} />
+              <MessageBubble message={message} onRetry={onRetry} />
             </div>
           );
         })}

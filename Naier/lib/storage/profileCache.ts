@@ -23,17 +23,25 @@ interface ProfileCacheDB extends DBSchema {
 }
 
 const DB_NAME = "naier";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "profiles";
 
 async function initDB(): Promise<IDBPDatabase<ProfileCacheDB>> {
   return openDB<ProfileCacheDB>(DB_NAME, DB_VERSION, {
-    upgrade(database) {
+    upgrade(database, _oldVersion, _newVersion, transaction) {
       if (!database.objectStoreNames.contains("messages")) {
         const messageStore = database.createObjectStore("messages", {
           keyPath: "id"
         });
-        messageStore.createIndex("by_conversation", "recipientPubkey");
+        messageStore.createIndex("by_conversation", "conversationKey");
+      } else {
+        const messageStore = transaction.objectStore("messages");
+
+        if (messageStore.indexNames.contains("by_conversation")) {
+          messageStore.deleteIndex("by_conversation");
+        }
+
+        messageStore.createIndex("by_conversation", "conversationKey");
       }
 
       if (!database.objectStoreNames.contains(STORE_NAME)) {

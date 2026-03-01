@@ -5,9 +5,10 @@ import type { MessageStatus as TMessageStatus } from "@/types/nostr";
 interface MessageStatusProps {
   status: TMessageStatus;
   isMine: boolean;
+  onRetry?: () => void;
 }
 
-export function MessageStatus({ status, isMine }: MessageStatusProps) {
+export function MessageStatus({ status, isMine, onRetry }: MessageStatusProps) {
   if (!isMine) {
     return null;
   }
@@ -66,9 +67,10 @@ export function MessageStatus({ status, isMine }: MessageStatusProps) {
       </span>
       <button
         className="rounded-full border border-red-400/30 px-2 py-0.5 text-[10px] font-medium text-red-200"
+        onClick={onRetry}
         type="button"
       >
-        재시도
+        Retry
       </button>
     </span>
   );

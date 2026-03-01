@@ -24,6 +24,8 @@ export interface NostrMessage {
   id: string;
   pubkey: string;
   recipientPubkey: string;
+  peerPubkey: string;
+  conversationKey: string;
   content: string;
   createdAt: number;
   isMine: boolean;

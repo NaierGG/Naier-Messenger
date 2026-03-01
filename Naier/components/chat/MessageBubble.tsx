@@ -2,12 +2,13 @@
 
 import { useMemo } from "react";
 import type { NostrMessage } from "@/types/nostr";
-import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { MessageStatus } from "@/components/chat/MessageStatus";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { formatTime } from "@/lib/utils/format";
 
 interface MessageBubbleProps {
   message: NostrMessage;
+  onRetry?: (messageId: string) => void;
 }
 
 function linkifyText(content: string) {
@@ -20,7 +21,7 @@ function linkifyText(content: string) {
           className="break-all underline underline-offset-2"
           href={part}
           key={`${part}-${index}`}
-          rel="noreferrer"
+          rel="noopener noreferrer"
           target="_blank"
         >
           {part}
@@ -32,7 +33,7 @@ function linkifyText(content: string) {
   });
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, onRetry }: MessageBubbleProps) {
   const renderedContent = useMemo(() => linkifyText(message.content), [message.content]);
 
   if (message.isMine) {
@@ -43,10 +44,12 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             {renderedContent}
           </p>
           <div className="mt-2 flex items-center justify-end gap-3">
-            <span className="text-[11px] text-sky-100/80">
-              {formatTime(message.createdAt)}
-            </span>
-            <MessageStatus isMine={message.isMine} status={message.status} />
+            <span className="text-[11px] text-sky-100/80">{formatTime(message.createdAt)}</span>
+            <MessageStatus
+              isMine={message.isMine}
+              onRetry={onRetry ? () => onRetry(message.id) : undefined}
+              status={message.status}
+            />
           </div>
         </div>
       </div>
@@ -61,10 +64,12 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           {renderedContent}
         </p>
         <div className="mt-2 flex items-center justify-end gap-3">
-          <span className="text-[11px] text-zinc-400">
-            {formatTime(message.createdAt)}
-          </span>
-          <MessageStatus isMine={message.isMine} status={message.status} />
+          <span className="text-[11px] text-zinc-400">{formatTime(message.createdAt)}</span>
+          <MessageStatus
+            isMine={message.isMine}
+            onRetry={onRetry ? () => onRetry(message.id) : undefined}
+            status={message.status}
+          />
         </div>
       </div>
     </div>
